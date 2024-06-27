@@ -26,8 +26,7 @@ export const deleteTask = async (token, taskId) => {
   return axios.delete(`${API_URL}/tasks/${taskId}`, { headers: { Authorization: `Bearer ${token}` } });
 };
 
-
-export const setReminderIntervall = async (token, taskId, interval) => {
+export const setReminderInterval = async (token, taskId, interval) => {
   return axios.put(`${API_URL}/tasks/${taskId}/reminder`, { reminder_interval: interval }, {
     headers: {
       Authorization: `Bearer ${token}`,

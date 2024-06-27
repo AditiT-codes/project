@@ -3,11 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api, Resource
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
-#from flask_security import Security, SQLAlchemyUserDatastore
-# from models import User, Role
 from datetime import datetime
 from flask_cors import CORS
-from datetime import datetime
 from flask_migrate import Migrate
 import os
 
@@ -24,10 +21,8 @@ cors = CORS(app, origins=["*"])
 app.config.from_object(Config)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-
 jwt = JWTManager(app)
 api = Api(app)
-
 
 # Database Models
 class User(db.Model):
@@ -41,15 +36,7 @@ class Task(db.Model):
     completed = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    reminder_interval = db.Column(db.Integer, nullable=True)  # New column for reminder interval
-    
-
-
-
-
-#security = Security(app, SQLAlchemyUserDatastore(db, User, Role))
-
-
+    reminder_interval = db.Column(db.Integer, nullable=True)
 
 # Resources
 class UserRegister(Resource):
@@ -65,7 +52,6 @@ class UserRegister(Resource):
         db.session.add(new_user)
         db.session.commit()
         return {'message': 'User created successfully'}, 201
-    
 
 class UserLogin(Resource):
     def post(self):
@@ -114,7 +100,7 @@ class TaskResource(Resource):
         db.session.delete(task)
         db.session.commit()
         return '', 204
-    
+
 class TaskReminder(Resource):
     @jwt_required()
     def put(self, task_id):
@@ -133,9 +119,5 @@ api.add_resource(TaskList, '/tasks')
 api.add_resource(TaskResource, '/tasks/<int:task_id>')
 api.add_resource(TaskReminder, '/tasks/<int:task_id>/reminder')
 
-
 if __name__ == '__main__':
-    
     app.run(debug=True)
-
-
