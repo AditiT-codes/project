@@ -1,0 +1,22 @@
+Metadata-Version: 2.1
+Name: cli50
+Version: 7.5.1
+Summary: This is CS50 CLI, with which you can mount a directory inside of an Ubuntu container.
+Home-page: https://github.com/cs50/cli50
+Author: CS50
+Author-email: sysadmins@cs50.harvard.edu
+License: GPLv3
+Keywords: cli50
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: System Administrators
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Topic :: Software Development
+Requires-Python: >=3.8
+License-File: LICENSE
+Requires-Dist: inflect
+Requires-Dist: requests
+Requires-Dist: tzlocal
+
+# `cli50`
+
+This is `cli50`, a command-line script that facilitates using [CS50 CLI](https://github.com/cs50/cli).

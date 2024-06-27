@@ -1,0 +1,3 @@
+colorama
+termcolor
+lib50<4,>=3

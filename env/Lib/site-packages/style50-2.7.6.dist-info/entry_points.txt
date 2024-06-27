@@ -1,0 +1,2 @@
+[console_scripts]
+style50 = style50.__main__:main
