@@ -12,92 +12,85 @@ const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [intervalIds, setIntervalIds] = useState({});
 
+  // Fetches the tasks for the logged-in user
   const fetchTasks = useCallback(async () => {
-    const response = await getTasks(token);
-    setTasks(response.data);
+    if (token) {
+      const response = await getTasks(token);
+      setTasks(response.data);
+    }
   }, [token]);
 
   useEffect(() => {
-    if (token) {
-      fetchTasks();
-    }
-  }, [token, fetchTasks]);
+    fetchTasks();
+  }, [fetchTasks]);
 
+  // Handles user registration
   const handleRegister = async () => {
     try {
       await registerUser(username, password);
       alert('Registration successful!');
     } catch (error) {
-      if (error.response) {
-        alert(error.response.data.message);
-      } else {
-        console.error('Error during registration:', error.message);
-        alert('An unexpected error occurred. Please try again later.');
-      }
+      alert(error.response?.data?.message || 'An unexpected error occurred. Please try again later.');
     }
   };
 
+  // Handles user login
   const handleLogin = async () => {
     try {
       const response = await loginUser(username, password);
       setToken(response.data.access_token);
       setIsLoggedIn(true);
     } catch (error) {
-      if (error.response && error.response.status === 401) {
-        alert('Invalid credentials');
-      } else {
-        console.error('Error during login:', error.message);
-        alert('An unexpected error occurred. Please try again later.');
-      }
+      alert(error.response?.status === 401 ? 'Invalid credentials' : 'An unexpected error occurred. Please try again later.');
     }
   };
 
+  // Adds a new task
   const handleAddTask = async () => {
-    await addTask(token, { name: newTask });
-    setNewTask('');
-    fetchTasks();
+    if (newTask) {
+      await addTask(token, { name: newTask });
+      setNewTask('');
+      fetchTasks();
+    }
   };
 
+  // Marks a task as complete/incomplete
   const handleCompleteTask = async (taskId) => {
     const task = tasks.find(t => t.id === taskId);
     await updateTask(token, taskId, { completed: !task.completed });
-
-    // Clear reminder interval for completed task
     if (intervalIds[taskId]) {
       clearInterval(intervalIds[taskId]);
       const newIntervalIds = { ...intervalIds };
       delete newIntervalIds[taskId];
       setIntervalIds(newIntervalIds);
     }
-
     fetchTasks();
   };
 
+  // Deletes a task
   const handleDeleteTask = async (taskId) => {
     await deleteTask(token, taskId);
-
-    // Clear reminder interval for deleted task
     if (intervalIds[taskId]) {
       clearInterval(intervalIds[taskId]);
       const newIntervalIds = { ...intervalIds };
       delete newIntervalIds[taskId];
       setIntervalIds(newIntervalIds);
     }
-
     fetchTasks();
   };
 
+  // Sets a reminder interval for a task
   const handleSetReminder = async (taskId) => {
-    const interval = reminderIntervals[taskId];
-    if (interval) {
-      await setReminderInterval(token, taskId, parseInt(interval));
+    const interval = parseInt(reminderIntervals[taskId], 10);
+    if (!isNaN(interval)) {
+      await setReminderInterval(token, taskId, interval);
       fetchTasks();
     } else {
       alert("Please enter a valid reminder interval.");
     }
   };
 
-  // Change: Added check to ensure notifications are not shown for completed tasks
+  // Shows a notification for a task reminder
   const showNotification = useCallback((task) => {
     if (Notification.permission === 'granted' && !task.completed) {
       new Notification('Task Reminder', { body: `Remember to complete: ${task.name}` });
@@ -105,6 +98,7 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    // Clears previous intervals and sets new ones based on task reminder intervals
     const clearPreviousIntervals = () => {
       Object.values(intervalIds).forEach(clearInterval);
       setIntervalIds({});
@@ -113,10 +107,8 @@ const App = () => {
     const setNewIntervals = () => {
       const newIntervalIds = {};
       tasks.forEach(task => {
-        if (task.reminder_interval && !task.completed) { // Ensure only active tasks have reminders
-          const intervalId = setInterval(() => {
-            showNotification(task);
-          }, task.reminder_interval * 1000); // Convert to milliseconds
+        if (task.reminder_interval && !task.completed) {
+          const intervalId = setInterval(() => showNotification(task), task.reminder_interval * 1000);
           newIntervalIds[task.id] = intervalId;
         }
       });
@@ -126,20 +118,16 @@ const App = () => {
     clearPreviousIntervals();
     setNewIntervals();
 
-    return () => {
-      clearPreviousIntervals();
-    };
+    return clearPreviousIntervals;
   }, [tasks, showNotification]);
 
   useEffect(() => {
-    const requestNotificationPermission = async () => {
-      const permission = await Notification.requestPermission();
+    // Requests notification permission on initial load
+    Notification.requestPermission().then(permission => {
       if (permission !== 'granted') {
         console.log('Notification permission denied.');
       }
-    };
-
-    requestNotificationPermission();
+    });
   }, []);
 
   if (!isLoggedIn) {
