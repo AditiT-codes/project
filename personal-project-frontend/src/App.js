@@ -63,12 +63,24 @@ const App = () => {
   const handleCompleteTask = async (taskId) => {
     const task = tasks.find(t => t.id === taskId);
     await updateTask(token, taskId, { completed: !task.completed });
+    if (!task.completed && intervalIds[taskId]) {
+      clearInterval(intervalIds[taskId]);
+      const updatedIntervalIds = { ...intervalIds };
+      delete updatedIntervalIds[taskId];
+      setIntervalIds(updatedIntervalIds);
+    }
     fetchTasks();
   };
 
   // Deletes a task
   const handleDeleteTask = async (taskId) => {
     await deleteTask(token, taskId);
+    if (intervalIds[taskId]) {
+      clearInterval(intervalIds[taskId]);
+      const updatedIntervalIds = { ...intervalIds };
+      delete updatedIntervalIds[taskId];
+      setIntervalIds(updatedIntervalIds);
+    }
     fetchTasks();
   };
 
@@ -118,7 +130,7 @@ const App = () => {
     setNewIntervals();
 
     return clearPreviousIntervals;
-  }, [tasks, showNotification, intervalIds]);
+  }, [tasks, showNotification]);
 
   useEffect(() => {
     // Requests notification permission on initial load
@@ -161,52 +173,67 @@ const App = () => {
       />
       <Button title="Add Task" onPress={handleAddTask} />
       <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.taskContainer}>
-            <Text style={item.completed ? styles.completedTask : styles.task}>{item.name}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Reminder Interval (seconds)"
-              value={reminderIntervals[item.id] || ''}
-              onChangeText={(text) => setReminderIntervals(prev => ({ ...prev, [item.id]: text }))}
-            />
-            <Button title="Set Reminder" onPress={() => handleSetReminder(item.id)} />
-            <Button title="Complete" onPress={() => handleCompleteTask(item.id)} />
-            <Button title="Delete" onPress={() => handleDeleteTask(item.id)} />
-          </View>
-        )}
+  data={tasks}
+  keyExtractor={(item) => item.id.toString()}
+  renderItem={({ item }) => (
+    <View style={styles.taskContainer}>
+      <Text style={item.completed ? styles.completedTask : styles.task}>{item.name}</Text>
+      <TextInput
+        style={styles.reminderInput}
+        placeholder="Reminder Interval (seconds)"
+        value={reminderIntervals[item.id] || ''}
+        onChangeText={(text) => setReminderIntervals(prev => ({ ...prev, [item.id]: text }))}
       />
+      <Button title="Set Reminder" onPress={() => handleSetReminder(item.id)} />
+      <Button title="Complete" onPress={() => handleCompleteTask(item.id)} />
+      <Button title="Delete" onPress={() => handleDeleteTask(item.id)} />
     </View>
+  )}
+/>
+</View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     padding: 20,
+    alignItems: 'center',  // Center the main container content
   },
   input: {
     padding: 10,
     borderWidth: 1,
     borderColor: '#ccc',
     marginBottom: 10,
+    width: '80%',  // Make the input field take 80% of the container width
   },
   taskContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',  // Change to column to stack items vertically
+    justifyContent: 'center', // Center items vertically
+    alignItems: 'center',     // Center items horizontally
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+    width: '80%',  // Make the task container take 80% of the container width
   },
   task: {
     fontSize: 16,
+    textAlign: 'center',  // Center the task text
   },
   completedTask: {
     fontSize: 16,
     textDecorationLine: 'line-through',
     color: '#999',
+    textAlign: 'center',  // Center the completed task text
+  },
+  reminderInput: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginBottom: 10,
+    width: '80%',  // Make the reminder input field take 80% of the container width
+    textAlign: 'center', // Center the text inside the input
   },
 });
+
 
 export default App;
