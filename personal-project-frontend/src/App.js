@@ -1,13 +1,28 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, Button, FlatList, StyleSheet } from 'react-native-web';
-import { registerUser, loginUser, getTasks, addTask, updateTask, deleteTask, setReminderInterval } from './api';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  FlatList,
+  StyleSheet,
+} from "react-native-web";
+import {
+  registerUser,
+  loginUser,
+  getTasks,
+  addTask,
+  updateTask,
+  deleteTask,
+  setReminderInterval,
+} from "./api";
 
 const App = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [token, setToken] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [token, setToken] = useState("");
   const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState('');
+  const [newTask, setNewTask] = useState("");
   const [reminderIntervals, setReminderIntervals] = useState({});
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [intervalIds, setIntervalIds] = useState({});
@@ -27,26 +42,36 @@ const App = () => {
   // Handles user registration
   const handleRegister = async () => {
     try {
+      if (!username || !password) {
+        alert("Username and password are required.");
+        return;
+      }
       await registerUser(username, password);
-      alert('Registration successful!');
+      alert("Registration successful!");
     } catch (error) {
-      alert(error.response?.data?.message || 'An unexpected error occurred. Please try again later.');
+      alert(
+        error.response?.data?.message ||
+          "An unexpected error occurred. Please try again later."
+      );
     }
   };
 
   // Handles user login
   const handleLogin = async () => {
-    if (!username || !password) {
-      alert('Username and password are required');
-      return;
-    }
-
     try {
+      if (!username || !password) {
+        alert("Username and password are required.");
+        return;
+      }
       const response = await loginUser(username, password);
       setToken(response.data.access_token);
       setIsLoggedIn(true);
     } catch (error) {
-      alert(error.response?.status === 401 ? 'Invalid credentials' : 'An unexpected error occurred. Please try again later.');
+      alert(
+        error.response?.status === 401
+          ? "Invalid credentials"
+          : "An unexpected error occurred. Please try again later."
+      );
     }
   };
 
@@ -54,20 +79,20 @@ const App = () => {
   const handleAddTask = async () => {
     if (newTask) {
       await addTask(token, { name: newTask });
-      setNewTask('');
+      setNewTask("");
       fetchTasks();
     }
   };
 
   // Marks a task as complete/incomplete
   const handleCompleteTask = async (taskId) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     await updateTask(token, taskId, { completed: !task.completed });
-    if (!task.completed && intervalIds[taskId]) {
+    if (intervalIds[taskId]) {
       clearInterval(intervalIds[taskId]);
-      const updatedIntervalIds = { ...intervalIds };
-      delete updatedIntervalIds[taskId];
-      setIntervalIds(updatedIntervalIds);
+      const newIntervalIds = { ...intervalIds };
+      delete newIntervalIds[taskId];
+      setIntervalIds(newIntervalIds);
     }
     fetchTasks();
   };
@@ -77,9 +102,9 @@ const App = () => {
     await deleteTask(token, taskId);
     if (intervalIds[taskId]) {
       clearInterval(intervalIds[taskId]);
-      const updatedIntervalIds = { ...intervalIds };
-      delete updatedIntervalIds[taskId];
-      setIntervalIds(updatedIntervalIds);
+      const newIntervalIds = { ...intervalIds };
+      delete newIntervalIds[taskId];
+      setIntervalIds(newIntervalIds);
     }
     fetchTasks();
   };
@@ -97,14 +122,10 @@ const App = () => {
 
   // Shows a notification for a task reminder
   const showNotification = useCallback((task) => {
-    if (Notification.permission === 'granted' && !task.completed) {
-      try {
-        new Notification('Task Reminder', { body: `Remember to complete: ${task.name}` });
-      } catch (error) {
-        console.error('Error showing notification:', error);
-      }
-    } else {
-      console.log('Notification permission not granted or task already completed.');
+    if (Notification.permission === "granted" && !task.completed) {
+      new Notification("Task Reminder", {
+        body: `Remember to complete: ${task.name}`,
+      });
     }
   }, []);
 
@@ -116,27 +137,34 @@ const App = () => {
     };
 
     const setNewIntervals = () => {
+      clearPreviousIntervals(); // Clear existing intervals before setting new ones
+
       const newIntervalIds = {};
-      tasks.forEach(task => {
+      tasks.forEach((task) => {
         if (task.reminder_interval && !task.completed) {
-          const intervalId = setInterval(() => showNotification(task), task.reminder_interval * 1000);
+          const intervalId = setInterval(
+            () => showNotification(task),
+            task.reminder_interval * 1000
+          );
           newIntervalIds[task.id] = intervalId;
         }
       });
       setIntervalIds(newIntervalIds);
     };
 
-    clearPreviousIntervals();
-    setNewIntervals();
+    setNewIntervals(); // Set intervals on initial render
 
-    return clearPreviousIntervals;
-  }, [tasks, showNotification]);
+    // Clean up intervals on component unmount
+    return () => {
+      clearPreviousIntervals();
+    };
+  }, [tasks, showNotification]); // Depend on tasks and showNotification
 
   useEffect(() => {
     // Requests notification permission on initial load
-    Notification.requestPermission().then(permission => {
-      if (permission !== 'granted') {
-        console.log('Notification permission denied.');
+    Notification.requestPermission().then((permission) => {
+      if (permission !== "granted") {
+        console.log("Notification permission denied.");
       }
     });
   }, []);
@@ -157,8 +185,11 @@ const App = () => {
           onChangeText={setPassword}
           secureTextEntry
         />
-        <Button title="Register" onPress={handleRegister} />
-        <Button title="Login" onPress={handleLogin} />
+        <View style={styles.buttonContainer}>
+          <Button title="Register" onPress={handleRegister} />
+          <View style={styles.buttonSpacing} />
+          <Button title="Login" onPress={handleLogin} />
+        </View>
       </View>
     );
   }
@@ -173,67 +204,81 @@ const App = () => {
       />
       <Button title="Add Task" onPress={handleAddTask} />
       <FlatList
-  data={tasks}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={({ item }) => (
-    <View style={styles.taskContainer}>
-      <Text style={item.completed ? styles.completedTask : styles.task}>{item.name}</Text>
-      <TextInput
-        style={styles.reminderInput}
-        placeholder="Reminder Interval (seconds)"
-        value={reminderIntervals[item.id] || ''}
-        onChangeText={(text) => setReminderIntervals(prev => ({ ...prev, [item.id]: text }))}
+        data={tasks}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.taskContainer}>
+            <Text style={item.completed ? styles.completedTask : styles.task}>
+              {item.name}
+            </Text>
+            <TextInput
+              style={styles.reminderInput}
+              placeholder="Reminder Interval (seconds)"
+              value={reminderIntervals[item.id] || ""}
+              onChangeText={(text) =>
+                setReminderIntervals((prev) => ({ ...prev, [item.id]: text }))
+              }
+            />
+            <View style={styles.buttonSpacing} />
+            <Button
+              title="Set Reminder"
+              onPress={() => handleSetReminder(item.id)}
+            />
+            <View style={styles.buttonSpacing} />
+            <Button
+              title="Complete"
+              onPress={() => handleCompleteTask(item.id)}
+            />
+            <View style={styles.buttonSpacing} />
+            <Button title="Delete" onPress={() => handleDeleteTask(item.id)} />
+          </View>
+        )}
       />
-      <Button title="Set Reminder" onPress={() => handleSetReminder(item.id)} />
-      <Button title="Complete" onPress={() => handleCompleteTask(item.id)} />
-      <Button title="Delete" onPress={() => handleDeleteTask(item.id)} />
     </View>
-  )}
-/>
-</View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    alignItems: 'center',  // Center the main container content
   },
   input: {
     padding: 10,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     marginBottom: 10,
-    width: '80%',  // Make the input field take 80% of the container width
+  },
+  reminderInput: {
+    padding: 5,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    marginHorizontal: 5,
+    width: "20%",
   },
   taskContainer: {
-    flexDirection: 'column',  // Change to column to stack items vertically
-    justifyContent: 'center', // Center items vertically
-    alignItems: 'center',     // Center items horizontally
+    flexDirection: "row",
+    alignItems: "center",
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    width: '80%',  // Make the task container take 80% of the container width
+    borderBottomColor: "#ccc",
   },
   task: {
     fontSize: 16,
-    textAlign: 'center',  // Center the task text
+    width: "30%",
   },
   completedTask: {
     fontSize: 16,
-    textDecorationLine: 'line-through',
-    color: '#999',
-    textAlign: 'center',  // Center the completed task text
+    textDecorationLine: "line-through",
+    color: "#999",
+    width: "30%",
   },
-  reminderInput: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginBottom: 10,
-    width: '80%',  // Make the reminder input field take 80% of the container width
-    textAlign: 'center', // Center the text inside the input
+  buttonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  buttonSpacing: {
+    width: 10,
   },
 });
-
 
 export default App;

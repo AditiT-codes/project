@@ -1,10 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = 'http://localhost:5000';
+const API_URL = "http://localhost:5000";
 
 // Helper function to get authorization config
 const getConfig = (token) => ({
-  headers: { Authorization: `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 });
 
 // Registers a new user
@@ -39,5 +39,9 @@ export const deleteTask = async (token, taskId) => {
 
 // Sets a reminder interval for a task
 export const setReminderInterval = async (token, taskId, interval) => {
-  return axios.put(`${API_URL}/tasks/${taskId}/reminder`, { reminder_interval: interval }, getConfig(token));
+  return axios.put(
+    `${API_URL}/tasks/${taskId}/reminder`,
+    { reminder_interval: interval },
+    getConfig(token)
+  );
 };
