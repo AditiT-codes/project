@@ -36,6 +36,11 @@ const App = () => {
 
   // Handles user login
   const handleLogin = async () => {
+    if (!username || !password) {
+      alert('Username and password are required');
+      return;
+    }
+
     try {
       const response = await loginUser(username, password);
       setToken(response.data.access_token);
@@ -58,24 +63,12 @@ const App = () => {
   const handleCompleteTask = async (taskId) => {
     const task = tasks.find(t => t.id === taskId);
     await updateTask(token, taskId, { completed: !task.completed });
-    if (intervalIds[taskId]) {
-      clearInterval(intervalIds[taskId]);
-      const newIntervalIds = { ...intervalIds };
-      delete newIntervalIds[taskId];
-      setIntervalIds(newIntervalIds);
-    }
     fetchTasks();
   };
 
   // Deletes a task
   const handleDeleteTask = async (taskId) => {
     await deleteTask(token, taskId);
-    if (intervalIds[taskId]) {
-      clearInterval(intervalIds[taskId]);
-      const newIntervalIds = { ...intervalIds };
-      delete newIntervalIds[taskId];
-      setIntervalIds(newIntervalIds);
-    }
     fetchTasks();
   };
 
@@ -93,7 +86,13 @@ const App = () => {
   // Shows a notification for a task reminder
   const showNotification = useCallback((task) => {
     if (Notification.permission === 'granted' && !task.completed) {
-      new Notification('Task Reminder', { body: `Remember to complete: ${task.name}` });
+      try {
+        new Notification('Task Reminder', { body: `Remember to complete: ${task.name}` });
+      } catch (error) {
+        console.error('Error showing notification:', error);
+      }
+    } else {
+      console.log('Notification permission not granted or task already completed.');
     }
   }, []);
 
@@ -119,7 +118,7 @@ const App = () => {
     setNewIntervals();
 
     return clearPreviousIntervals;
-  }, [tasks, showNotification]);
+  }, [tasks, showNotification, intervalIds]);
 
   useEffect(() => {
     // Requests notification permission on initial load
